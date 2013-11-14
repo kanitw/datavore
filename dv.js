@@ -94,6 +94,7 @@ dv.table = function(input)
 
         table.push(vals);
         table[name] = vals;
+        return vals;
     };
     
     table.removeColumn = function(col) {
@@ -503,6 +504,13 @@ dv.stdev = function(expr, sample) {
 
 // -- dimension operators ---
 
+//TODO(kanitw): organize this logFloor method
+function logFloor(x, b) {
+  return (x > 0)
+    ? Math.pow(b, Math.floor(Math.log(x) / Math.log(b)))
+    : -Math.pow(b, -Math.floor(-Math.log(-x) / Math.log(b)));
+}
+
 dv.bin = function(expr, step, min, max) {
     var op = {};
     op.array = function(values) {
@@ -510,15 +518,30 @@ dv.bin = function(expr, step, min, max) {
             minv = min, maxv = max, minb = false, maxb = false;
         if (minv === undefined) { minv = Infinity; minb = true; }
         if (maxv === undefined) { maxv = -Infinity; maxb = true; }
+
         if (minb || maxb) {
             for (i = 0; i < N; ++i) {
                 val = values[i];
                 if (minb && val < minv) { minv = val; }
                 if (maxb && val > maxv) { maxv = val; }
             }
-            if (minb) { minv = Math.floor(minv / step) * step; }
-            if (maxb) { maxv = Math.ceil(maxv / step) * step; }
+
         }
+      //TODO(kanitw) check this with index.html
+        var span = maxv-minv, bins=expr;
+        if (step === undefined) {
+          step = logFloor(span / bins, 10);
+          var err = bins / (span / step);
+          if (err <= .15) step *= 10;
+          else if (err <= .35) step *= 5;
+          else if (err <= .75) step *= 2;
+          console.log("step", step, "span", span, "bins", bins, "minv", minv, "maxv", maxv)
+        }
+
+        if (minb) { minv = Math.floor(minv / step) * step; }
+        if (maxb) { maxv = Math.ceil(maxv / step) * step; }
+
+
         // compute index array
         var a = [], lut = (a.lut = []),
             range = (maxv - minv), unique = Math.ceil(range / step);
