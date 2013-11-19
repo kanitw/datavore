@@ -69,20 +69,26 @@ dv.type = {
     unknown: "unknown"
 };
 
+
+
 dv.table = function(input)
 {
     var table = []; // the data table
     
-    table.addColumn = function(name, values, type, iscolumn) {
+    table.addColumn = function(name, values, type, iscolumn, coded) {
         type = type || dv.type.unknown;
         var compress = (type === dv.type.nominal || type === dv.type.ordinal);
         var vals = values;
         
         if (compress && !iscolumn) {
             vals = [];
-            vals.lut = code(values);
-            for (var i = 0, map=dict(vals.lut); i < values.length; ++i) {
+            if(coded && values.lut){ //binned case
+              vals = values;
+            }else{
+              vals.lut = code(values);
+              for (var i = 0, map=dict(vals.lut); i < values.length; ++i) {
                 vals.push(map[values[i]]);
+              }
             }
             vals.get = function(idx) { return this.lut[this[idx]]; }
         } else if (!iscolumn) {
@@ -117,7 +123,7 @@ dv.table = function(input)
 
     table.dense_query = function(q) {
         var tab = q.where ? table.where(q.where) : table;
-        var dims = [], sz = [1], hasDims = q.dims;
+        var dims = [], sz = [1], hasDims = q.dims; //sz is size
         if (hasDims) {
             sz = [];
             for (i = 0; i < q.dims.length; ++i) {
@@ -374,7 +380,7 @@ outer:
         return typeof(c[0]) !== "number" ? c.sort()
             : c.sort(function(a,b) { return a - b; });
     };
-    
+
     /** @private */
     function dict(lut) {
         return lut.reduce(function(a,b,i) { a[b] = i; return a; }, {});
@@ -525,9 +531,9 @@ dv.bin = function(expr, step, min, max) {
                 if (minb && val < minv) { minv = val; }
                 if (maxb && val > maxv) { maxv = val; }
             }
-
         }
-      //TODO(kanitw) check this with index.html
+
+        //TODO(kanitw) check this with index.html in Jeff's mockup code
         var span = maxv-minv, bins=expr;
         if (step === undefined) {
           step = logFloor(span / bins, 10);
@@ -535,16 +541,20 @@ dv.bin = function(expr, step, min, max) {
           if (err <= .15) step *= 10;
           else if (err <= .35) step *= 5;
           else if (err <= .75) step *= 2;
-          console.log("step", step, "span", span, "bins", bins, "minv", minv, "maxv", maxv)
+//          console.log("Name", values.name, "step", step, "span", span, "bins", bins, "minv", minv, "maxv", maxv)
         }
 
         if (minb) { minv = Math.floor(minv / step) * step; }
         if (maxb) { maxv = Math.ceil(maxv / step) * step; }
 
-
         // compute index array
         var a = [], lut = (a.lut = []),
             range = (maxv - minv), unique = Math.ceil(range / step);
+
+        a.min = minv;
+        a.max= maxv;
+        a.step = step;
+
         for (i = 0; i < N; ++i) {
             val = values[i];
             if (val < minv || val > maxv) { a.push(-1); }
@@ -555,6 +565,7 @@ dv.bin = function(expr, step, min, max) {
             // multiply b/c adding garners round-off error
             lut.push(minv + i * step);
         }
+        //console.log("Name", values.name, "step", step, "span", span, "bins", bins, "minv", minv, "maxv", maxv, "lut", lut);
         return a;
     };
     op.step = function(x) {
