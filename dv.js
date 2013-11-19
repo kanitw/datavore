@@ -66,6 +66,7 @@ dv.type = {
     nominal: "nominal",
     ordinal: "ordinal",
     numeric: "numeric",
+    date: "date",
     unknown: "unknown"
 };
 
