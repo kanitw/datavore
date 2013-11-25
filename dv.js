@@ -100,6 +100,15 @@ dv.table = function(input)
         vals.index = table.length;
         vals.type = type;
 
+        vals.setFilter = function(fn){
+          vals.filterFn = fn;
+          if(fn){
+            vals.filtered = vals.filter(fn);
+          }else{
+            vals.filtered = vals;
+          }
+        };
+
         table.push(vals);
         table[name] = vals;
         return vals;
