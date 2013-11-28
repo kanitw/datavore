@@ -101,11 +101,11 @@ dv.table = function(input)
         vals.type = type;
 
         vals.setFilter = function(fn){
-          vals.filterFn = fn;
+          this.filterFn = fn;
           if(fn){
-            vals.filtered = vals.filter(fn);
+            this.filtered = this.filter(fn);
           }else{
-            vals.filtered = vals;
+            this.filtered = this;
           }
         };
 
